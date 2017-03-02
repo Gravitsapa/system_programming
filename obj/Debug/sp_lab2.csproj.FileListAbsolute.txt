@@ -1,0 +1,6 @@
+c:\users\andrey\documents\visual studio 2015\Projects\sp_lab2\sp_lab2\bin\Debug\sp_lab2.exe.config
+c:\users\andrey\documents\visual studio 2015\Projects\sp_lab2\sp_lab2\bin\Debug\sp_lab2.exe
+c:\users\andrey\documents\visual studio 2015\Projects\sp_lab2\sp_lab2\bin\Debug\sp_lab2.pdb
+c:\users\andrey\documents\visual studio 2015\Projects\sp_lab2\sp_lab2\obj\Debug\sp_lab2.csprojResolveAssemblyReference.cache
+c:\users\andrey\documents\visual studio 2015\Projects\sp_lab2\sp_lab2\obj\Debug\sp_lab2.exe
+c:\users\andrey\documents\visual studio 2015\Projects\sp_lab2\sp_lab2\obj\Debug\sp_lab2.pdb
