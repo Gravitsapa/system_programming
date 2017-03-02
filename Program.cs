@@ -7,7 +7,9 @@ using System.IO;
 
 namespace Practika2
 {
-    enum words { BEGINL = 257, ENDL, IFL, DOL, WHILEL, IDEN, NUMB };
+    enum words { BEGINL = 257, ENDL, IFL, DOL, WHILEL, RETURNL, CONSTL, INTL, THENL, READL, PRINTL, IDEN, NUMB };
+
+    //"begin", "end", "if", "do", "while", "return", "const", "int", "then", "read", "print"
 
     class Program
     {
@@ -17,7 +19,7 @@ namespace Practika2
         int lex;
         string[] TNM = new string[400]; //таблиця ідентифікаторів
         int ptn = 0;//лічильник кількості занесених в таблицю TNM ідентифікаторів
-        int lval = 0; //адреса ідентифікатора (його порядковий номер в таблиці TNM).
+        int lval; //адреса ідентифікатора (його порядковий номер в таблиці TNM).
 
 
         public Program(string file1, string file2)
@@ -48,7 +50,7 @@ namespace Practika2
                 {
                     number();
                 }
-                else if (nch == '(' || nch == ')' || nch == ';' || nch == '+' || nch == '-' || nch == '*' || nch == '/' || nch == '%')
+                else if (nch == '(' || nch == ')' || nch == ';' || nch == '+' || nch == '-' || nch == '*' || nch == '/' || nch == '%' || nch == '=')
                 {
                     sw.WriteLine("{0} is a special symbol", nch);
                 }
@@ -82,12 +84,13 @@ namespace Practika2
 
         void number()
         {
-            do
-            {
+            lval = 0;
+             while (char.IsDigit(nch)) {
                 lval = lval * 10 + nch - '0';
+                //lval =  
                 nch = getc();
             }
-            while (char.IsDigit(nch));
+            
 
             lex = (int)words.NUMB;
             Console.WriteLine("number lval={0} lex={1}", lval, lex);
@@ -99,8 +102,8 @@ namespace Practika2
         public void word()
         {
             string tx = " ";
-            string[] serv = { "begin", "end", "if", "do", "while" };
-            int[] cdl = { (int)words.BEGINL, (int)words.ENDL, (int)words.IFL, (int)words.DOL, (int)words.WHILEL };
+            string[] serv = { "begin", "end", "if", "do", "while", "return", "const", "int", "then", "read", "print" };
+            int[] cdl = { (int)words.BEGINL, (int)words.ENDL, (int)words.IFL, (int)words.DOL, (int)words.WHILEL, (int)words.RETURNL, (int)words.CONSTL, (int)words.INTL, (int)words.THENL, (int)words.READL, (int)words.PRINTL };
             while (char.IsLetterOrDigit(nch))
             {
                 tx += nch;
