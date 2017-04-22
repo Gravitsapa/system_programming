@@ -22,6 +22,22 @@ namespace Practika2
         int lval; //адреса ідентифікатора (його порядковий номер в таблиці TNM).
         private int nst = 0;
 
+        struct odc
+        {
+            public string name;
+            public int what;
+            public int val;
+        }
+        int[] st = new int[500];
+        int cgv = 0;
+        int clv = 0;
+        odc[] TOB = new odc[30];
+        int pto = 0;
+        int ptol = 0;
+        int ut = 1;
+
+
+
         public Program(string file1, string file2)
         {
             sr = new StreamReader(file1);
@@ -187,21 +203,26 @@ namespace Practika2
             return;
         }
 
-        void cons()
-        {
+        void cons() { 
+            string nm = TNM[lval];
+            int s;
+        
             exam((int)words.IDEN);
             exam('=');
+            s = (lex == '-') ? -1 : 1;
             if (lex == '+' || lex == '-')
                 get();
+            newob(nm, 1, s * lval);//Занесено об'єкт
             exam((int)words.NUMB);
             return;
         }
 
-        void dvarb()
+        public void dvarb()
         {
             do
             {
                 get();
+                newob(TNM[lval], (ut == 1 ? 2 : 3), (ut == 1 ? cgv++ : ++clv));
                 exam((int)words.IDEN);
             } while (lex == ',');
             exam(';');
@@ -216,20 +237,26 @@ namespace Practika2
             return;
         }
 
-        void param()
+        public int param()
         {
+            int p, cp = 0;
             exam('(');
             if (lex != ')')
             {
+                newob(TNM[lval], 3, ++cp);
                 exam((int)words.IDEN);
                 while (lex == ',')
                 {
                     get();
+                    newob(TNM[lval], 3, ++cp);
+
                     exam((int)words.IDEN);
                 }
             }
             exam(')');
-            return;
+            for (p = ptol; p < pto; p++)
+                TOB[p].val -= cp + 3;
+            return cp;
         }
 
         void body()
@@ -335,6 +362,48 @@ namespace Practika2
             return;
         }
 
+        public void newob(string nm, int wt, int vl)
+        {
+            int pe, p;
+            pe = ut == 1 ? pto : ptol;
+            for (p = pto - 1; p >= pe; p--)
+            {
+                if (nm == TOB[p].name)
+                    Console.WriteLine("{0} описана двічі", nm);
+            }
+            if (pto > 99)
+                Console.WriteLine("Переповнення таблиці об'єктів  TOB");
+            TOB[pto].name = nm;
+            TOB[pto].what = wt;
+            TOB[pto].val = vl;
+            pto++;
+        }
+
+        public int findob(string nm)
+        {
+            int p;
+            Console.WriteLine("nm={0}", nm);
+            for (p = pto - 1; p >= 0; p--)
+            {
+                Console.WriteLine("TOB[{0}].name={1}", p, TOB[p].name);
+                if (TOB[p].name == nm)
+                    return p;
+            }
+            Console.WriteLine("{0} не описана");
+            return 0;
+        }
+
+        public void printObjInFile()
+        {
+
+            for (int j = 0; j < pto; j++)
+            {
+                sw.WriteLine("TOB[{0}].name {1} what={2} val={3}", j, TOB[j].name, TOB[j].what, TOB[j].val);
+                Console.WriteLine("TOB[{0}].name {1} what={2} val={3}", j, TOB[j].name, TOB[j].what, TOB[j].val);
+            }
+
+        }
+
 
         static void Main(string[] args)
         {
@@ -344,6 +413,7 @@ namespace Practika2
             Program ob = new Program(name1, name2);
             ob.get();
             ob.prog();
+            ob.printObjInFile();
 
             ob.sw.Close();
         }
