@@ -59,6 +59,9 @@ namespace Practika2
         int ptol = 0;
         int ut = 1;
 
+        int adrnm;  //- точка входу в таблиці команд для функції main();
+        int cpnm; //- кількість параметрів функції main();
+        int t = 0; //-  номер вільного елемента у стеку або ще лічильник введених чисел у стек;
 
 
         public Program(string file1, string file2)
@@ -197,22 +200,34 @@ namespace Practika2
             return;
         }
 
-        void prog()
-        {
-            while (lex != '@')
+        public void prog()
+        { //check if lex is prog PROG -> (DCONST|DVARB|DFUNK) * eof
+            try
             {
-                switch (lex)
+                while (sr.Peek() >= 0)
                 {
-                    case (int)words.IDEN: dfunc(); break;
-                    case (int)words.INTL: dvarb(); break;
-                    case (int)words.CONSTL: dconst(); break;
-                    default:
-                        Console.WriteLine("Ошибка синтаксиса в строке {0}. Лексема lex={1}", nst, lex);
-                        lex = '@';
-                        break;
+                    switch (lex)
+                    {
+                        case (int)words.IDEN: dfunc(); break;
+                        case (int)words.INTL: dvarb(); break;
+                        case (int)words.CONSTL: dconst(); break;
+                        default:
+                            Console.WriteLine("Помилкова лексема lex={0} в prog() nst={1}", lex, nst);
+                            break;
+                    }
                 }
+
+                int p = fmain();
+                adrnm = TFN[p].start;
+                cpnm = TFN[p].cpt;
+
+                return;
+
             }
-            return;
+            catch (IndexOutOfRangeException)
+            {
+                Console.WriteLine("Вихід за межі текста програми на SPL");
+            }
         }
 
         void dconst()
@@ -562,6 +577,55 @@ namespace Practika2
             TCD[tc].opd = op;
 
             return tc++;
+        }
+
+        public int fmain()
+        { //find main() and not described funct
+            string nm = " main ";
+            int pm = -1;
+
+            for (int p = ptf - 1; p >= 0; p--)
+            {
+                if (TFN[p].isd != 1)
+                {
+                    Console.WriteLine("Функція {0} не описана", nm);
+                }
+
+                if (nm == TFN[p].name)
+                {
+                    pm = p;
+                }
+            }
+
+            if (pm != -1)
+            {
+                return pm;
+            }
+            else
+            {
+                Console.WriteLine(" Відсутня функція main");
+            }
+
+            return 0;
+        }
+
+        public void push(int a)
+        { //integer to stack
+            if (t > 499)
+                Console.WriteLine(" Переповнення стека st ");
+            st[++t] = a;
+            return;
+        }
+
+        public int read()
+        { //integer from keyboard
+            int v;
+            string s;
+            Console.WriteLine("Enter a number");
+            s = Console.ReadLine();
+            v = Convert.ToInt32(s);
+            Console.WriteLine("v={0}", v);
+            return v;
         }
 
         public void printObjInFile()
