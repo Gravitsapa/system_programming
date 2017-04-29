@@ -22,12 +22,25 @@ namespace Practika2
         int lval; //адреса ідентифікатора (його порядковий номер в таблиці TNM).
         private int nst = 0;
 
+        fnd[] TFN = new fnd[10];
+        int ptf = 0;
+
+
         struct odc
         {
             public string name;
             public int what;
             public int val;
         }
+
+        struct fnd
+        {
+            public string name; //імя функції
+            public int isd;     //описана (isd=1) чи ні (isd=0)
+            public int cpt;     //кількість параметрів
+            public int start;   // точка входу в таблиі команд
+        }
+
         int[] st = new int[500];
         int cgv = 0;
         int clv = 0;
@@ -229,11 +242,17 @@ namespace Practika2
             return;
         }
 
-        void dfunc()
-        {
+        public void dfunc()
+        { //parsing and creating new SLP-funct, check DFUNC -> iden PARAM BODY
+            int cp, st;
+            string nm = TNM[lval];
             get();
-            param();
-            body();
+            ut = 0;
+            cp = param();
+            st = body();
+            ut = 1;
+            pto = ptol;
+            defin(nm, cp, st);
             return;
         }
 
@@ -371,7 +390,7 @@ namespace Practika2
                 if (nm == TOB[p].name)
                     Console.WriteLine("{0} описана двічі", nm);
             }
-            if (pto > 99)
+            if (pto > 30)
                 Console.WriteLine("Переповнення таблиці об'єктів  TOB");
             TOB[pto].name = nm;
             TOB[pto].what = wt;
@@ -393,13 +412,85 @@ namespace Practika2
             return 0;
         }
 
+        public void defin(string nm, int cp, int ad)
+        { //descr SPL-function
+            int p, c1, c2;
+            p = findfn(nm);
+
+            if (p != 0)
+            {
+                if (TFN[p].isd == 1)
+                {
+                    Console.WriteLine("{0} описана двічі", nm);
+                }
+
+                if (TFN[p].cpt != cp)
+                {
+                    Console.WriteLine("Не сходиться кількість параметрів для {0}", nm);
+                }
+
+                TFN[p].isd = 1;
+                
+                TFN[p].start = ad;
+            }
+            else
+            {
+                newfn(nm, 1, cp, ad);
+            }
+            return;
+        }
+
+        public int newfn(string nm, int df, int cp, int ps)
+        { //add SPL-funct to table
+            if (ptf > 29)
+            {
+                Console.WriteLine(" Переповнення таблиці функцій TFN");
+            }
+
+            TFN[ptf].name = nm;
+            TFN[ptf].isd = df;
+            TFN[ptf].start = ps;
+            TFN[ptf].cpt = cp;
+
+            return ptf++;
+        }
+
+        public int findfn(string nm)
+        { //search SPL-funct in the table
+            for (int p = ptf - 1; p >= 0; p--)
+            {
+                if (TFN[p].name == nm)
+                {
+                    return p;
+                }
+            }
+            return 0;
+        }
+
+        int eval(string nm, int cp)
+        {
+            int p = findfn(nm);
+            if (p == 1)
+            {
+                return newfn(nm, 0, cp, -1);
+            }
+
+            if (TFN[p].cpt == cp)
+            {
+                return p;
+            }
+
+            Console.WriteLine("Кількість параметрів для {0}не співпадає", nm);
+            return 0;
+        }
+
         public void printObjInFile()
         {
 
             for (int j = 0; j < pto; j++)
             {
-                sw.WriteLine("TOB[{0}].name {1} what={2} val={3}", j, TOB[j].name, TOB[j].what, TOB[j].val);
-                Console.WriteLine("TOB[{0}].name {1} what={2} val={3}", j, TOB[j].name, TOB[j].what, TOB[j].val);
+                sw.WriteLine("TOB[{0}] name ={1} what={2} val={3}", j, TOB[j].name, TOB[j].what, TOB[j].val);
+                Console.WriteLine("TOB[{0}] name ={1} what={2} val={3}", j, TOB[j].name, TOB[j].what, TOB[j].val);
             }
 
         }
