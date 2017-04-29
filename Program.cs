@@ -8,7 +8,7 @@ using System.IO;
 namespace Practika2
 {
     enum words { BEGINL = 257, ENDL, IFL, DOL, WHILEL, RETURNL, CONSTL, INTL, THENL, READL, PRINTL, IDEN, NUMB };
-
+    enum commands { OPR, LIT, LDE, LDI, STE, STI, CAL, INI, JMP, JMC };
     //"begin", "end", "if", "do", "while", "return", "const", "int", "then", "read", "print"
 
     class Program
@@ -21,10 +21,6 @@ namespace Practika2
         int ptn = 0;//лічильник кількості занесених в таблицю TNM ідентифікаторів
         int lval; //адреса ідентифікатора (його порядковий номер в таблиці TNM).
         private int nst = 0;
-
-        fnd[] TFN = new fnd[10];
-        int ptf = 0;
-
 
         struct odc
         {
@@ -40,6 +36,20 @@ namespace Practika2
             public int cpt;     //кількість параметрів
             public int start;   // точка входу в таблиі команд
         }
+
+        fnd[] TFN = new fnd[10];
+        int ptf = 0;
+
+        struct cmd
+        {
+            public int cod;    //код (що робити)
+            public int opd;   //операнд
+        }
+
+        cmd[] TCD = new cmd[100];
+        int tc = 0;
+
+
 
         int[] st = new int[500];
         int cgv = 0;
@@ -278,16 +288,20 @@ namespace Practika2
             return cp;
         }
 
-        void body()
+        int body()
         {
+            int st;
             exam((int)words.BEGINL);
+            clv = 0;
             while (lex == (int)words.INTL || lex == (int)words.CONSTL)
                 if (lex == (int)words.INTL) dvarb();
                 else
                     dconst();
+            st = gen((int)commands.INI, clv);
             stml();
             exam((int)words.ENDL);
-            return;
+            gen((int)commands.OPR, 10);
+            return st;
         }
 
         void stml()
@@ -301,84 +315,142 @@ namespace Practika2
             return;
         }
 
-        void stat()
+        public void stat()
         {
+            int p;
+            int t1, t2;
+
             switch (lex)
             {
-                case (int)words.IDEN: get(); exam('='); expr(); break;
-                case (int)words.READL: get(); exam((int)words.IDEN); break;
-                case (int)words.PRINTL: get(); expr(); break;
-                case (int)words.RETURNL: get(); expr(); break;
-                case (int)words.IFL: get(); expr(); exam((int)words.THENL); stml(); exam((int)words.ENDL); break;
-                case (int)words.WHILEL: get(); expr(); exam((int)words.DOL); stml(); exam((int)words.ENDL); break;
+                case (int)words.IDEN:
+                    p = findob(TNM[lval]); get(); exam('='); expr();
+                    if (TOB[p].what == 1)
+                        Console.WriteLine("{0} константа. Присвоєння неможливе", TNM[lval]);
+                    gen(TOB[p].what == 2 ? (int)commands.STE : (int)commands.STI, TOB[p].val);
+                    break;
+
+                case (int)words.READL:
+                    get();
+                    p = findob(TNM[lval]); gen((int)commands.OPR, 1); if (TOB[p].what == 1)
+                        Console.WriteLine("{0} константа. Присвоєння неможливе", TNM[lval]);
+                    gen(TOB[p].what == 2 ? (int)commands.STE : (int)commands.STI, TOB[p].val); exam((int)words.IDEN);
+                    break;
+
+                case (int)words.PRINTL: get(); expr(); gen((int)commands.OPR, 2); break;
+
+                case (int)words.RETURNL: get(); expr(); gen((int)commands.OPR, 9); break;
+
+                case (int)words.IFL:
+                    get(); expr(); exam((int)words.THENL);
+                    t1 = gen((int)commands.JMC, 0); stml(); exam((int)words.ENDL); TCD[t1].opd = tc; break;
+
+                case (int)words.WHILEL:
+                    get(); t1 = tc; expr(); exam((int)words.DOL);
+                    t2 = gen((int)commands.JMC, 0); stml(); gen((int)commands.JMP, t1); TCD[t2].opd = tc;
+                    exam((int)words.ENDL); break;
+
                 default:
-                    Console.WriteLine("“stat {0} \n", nst);
+                    Console.WriteLine("Error in stat nst={0} lex={1}", nst, lex);
                     break;
             }
-            return;
         }
 
-        void expr()
+        public void expr()
         {
+
+            int neg = 0;
+            if (lex == '-')
+            {
+                neg = 1;
+            }
             if (lex == '+' || lex == '-')
-                get();
-            term();
-            while (lex == '+' || lex == '-')
             {
                 get();
-                term();
             }
+            term();
+
+            if (neg == 1)
+            {
+                gen((int)commands.OPR, 8);
+            }
+
+            while (lex == '+' || lex == '-')
+            {
+                neg = lex == '-' ? 4 : 3;
+                get();
+                term();
+                gen((int)commands.OPR, neg);
+            }
+
             return;
         }
 
         public void term()
-
         {
+            int op;
             fact();
+
             while (lex == '*' || lex == '/' || lex == '%')
             {
+                op = lex == '*' ? 5 : lex == '/' ? 6 : 7;
                 get();
                 fact();
+                gen((int)commands.OPR, op);
             }
             return;
         }
 
         public void fact()
         {
+            string nm;
+            int cp, p, p1;
             switch (lex)
             {
-                case '(':
-                    get();
-                    expr();
-                    exam(')');
-                    break;
+                case '(': get(); expr(); exam(')'); break;
                 case (int)words.IDEN:
-                    get();
+                    nm = TNM[lval]; get();
+
                     if (lex == '(')
                     {
                         get();
-                        if (lex != ')')
-                            fctl();
+                        cp = (lex == ')') ? 0 : fctl();
                         exam(')');
+                        p1 = eval(nm, cp);
+                        gen((int)commands.LIT, cp);
+                        cp = gen((int)commands.CAL, TFN[p1].start);
+
+                        if (TFN[p1].isd != 1)
+                        {
+                            TFN[p1].start = cp;
+                        }
+                    }
+                    else
+                    {
+                        p = findob(nm);
+                        gen(TOB[p].what == 1 ? (int)commands.LIT : TOB[p].what == 2 ? (int)commands.LDE : (int)commands.LDI, TOB[p].val);
                     }
                     break;
-                case (int)words.NUMB: get(); break;
+
+                case (int)words.NUMB: gen((int)commands.LIT, lval); get(); break;
+
                 default:
-                    Console.WriteLine("Error in fact nst={0}", nst);
+                    Console.WriteLine("Error in fact nst={0} lex={1}", nst, lex);
                     break;
             }
             return;
         }
 
-        public void fctl()
+        public int fctl()
         {
+            int cf = 1;
             expr();
             while (lex == ',')
             {
                 get();
                 expr();
+                cf++;
             }
-            return;
+            return cf;
         }
 
         public void newob(string nm, int wt, int vl)
@@ -482,6 +554,14 @@ namespace Practika2
 
             Console.WriteLine("Кількість параметрів для {0}не співпадає", nm);
             return 0;
+        }
+
+        public int gen(int co, int op)
+        { //add comnd to table
+            TCD[tc].cod = co;
+            TCD[tc].opd = op;
+
+            return tc++;
         }
 
         public void printObjInFile()
