@@ -636,6 +636,17 @@ namespace Practika2
                 sw.WriteLine("TOB[{0}] name ={1} what={2} val={3}", j, TOB[j].name, TOB[j].what, TOB[j].val);
                 Console.WriteLine("TOB[{0}] name ={1} what={2} val={3}", j, TOB[j].name, TOB[j].what, TOB[j].val);
             }
+            for (int j = 0; j < ptf; j++)
+            {
+                sw.WriteLine("TFN[j].name={0}, TFN[j].isd={1}, TFN[j].cpt={2}, TFN[j].start={3}", TFN[j].name, TFN[j].isd, TFN[j].cpt, TFN[j].start);
+                Console.WriteLine("TFN[j].name={0}, TFN[j].isd={1}, TFN[j].cpt={2}, TFN[j].start={3}", TFN[j].name, TFN[j].isd, TFN[j].cpt, TFN[j].start);
+            }
+
+            for (int j = 0; j < tc; j++)
+            {
+                sw.WriteLine("TCD[j].cod={0}, TCD[j].opd={1}", TCD[j].cod, TCD[j].opd);
+                Console.WriteLine("TCD[j].cod={0}, TCD[j].opd={1}", TCD[j].cod, TCD[j].opd);
+            }
 
         }
 
