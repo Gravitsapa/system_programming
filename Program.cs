@@ -5,188 +5,192 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 
-namespace Practika2
+namespace Program
 {
-    enum words { BEGINL = 257, ENDL, IFL, DOL, WHILEL, RETURNL, CONSTL, INTL, THENL, READL, PRINTL, IDEN, NUMB };
+    enum words { BEGINL = 257, ENDL, READL, PRINTL, RETRL, IFL, THENL, WHILEL, DOL, INTL, CONSTL, NUMB, IDEN };
     enum commands { OPR, LIT, LDE, LDI, STE, STI, CAL, INI, JMP, JMC };
-    //"begin", "end", "if", "do", "while", "return", "const", "int", "then", "read", "print"
+
+    struct cmd
+    {
+        public int cod;    //код (що робити)
+        public int opd;   //операнд
+    }
+    struct odc
+    {
+        public string name;
+        public int what;// 1 = const, 2 = global var, 3 = local var 
+        public int val;
+    }
+
+    struct fnd
+    {
+        public string name; //імя функції
+        public int isd;     //описана (isd=1) чи ні (isd=0)
+        public int cpt;     //кількість параметрів
+        public int start;   // точка входу в таблиі команд
+    }
 
     class Program
     {
-        StreamReader sr;
-        StreamWriter sw;
+        int nst = 0;
         char nch = '\n';
         int lex;
-        string[] TNM = new string[400]; //таблиця ідентифікаторів
-        int ptn = 0;//лічильник кількості занесених в таблицю TNM ідентифікаторів
-        int lval; //адреса ідентифікатора (його порядковий номер в таблиці TNM).
-        private int nst = 0;
+        int lval;
+        StreamReader sr;
+        StreamWriter sw;
 
-        struct odc
-        {
-            public string name;
-            public int what;
-            public int val;
-        }
-
-        struct fnd
-        {
-            public string name; //імя функції
-            public int isd;     //описана (isd=1) чи ні (isd=0)
-            public int cpt;     //кількість параметрів
-            public int start;   // точка входу в таблиі команд
-        }
-
-        fnd[] TFN = new fnd[10];
-        int ptf = 0;
-
-        struct cmd
-        {
-            public int cod;    //код (що робити)
-            public int opd;   //операнд
-        }
+        string[] TNM = new string[400];
+        int ptn = 0;
 
         cmd[] TCD = new cmd[100];
         int tc = 0;
-
-
-
         int[] st = new int[500];
         int cgv = 0;
         int clv = 0;
-        odc[] TOB = new odc[30];
+
+        odc[] TOB = new odc[50];
         int pto = 0;
         int ptol = 0;
         int ut = 1;
 
+        fnd[] TFN = new fnd[10];
+        int ptf = 0;
         int adrnm;  //- точка входу в таблиці команд для функції main();
         int cpnm; //- кількість параметрів функції main();
         int t = 0; //-  номер вільного елемента у стеку або ще лічильник введених чисел у стек;
+        int sp; // - адреса активації;
+        int p; //- номер поточної команди в таблиці команд TCD(лічильник команд);
 
-
-        public Program(string file1, string file2)
+        public Program(string fileNameIn, string fileNameOut)
         {
-            sr = new StreamReader(file1);
-            sw = new StreamWriter(file2);
+            sr = new StreamReader(fileNameIn);
+            sw = new StreamWriter(fileNameOut);
         }
 
         public char getc()
         {
-            return (char)sr.Read();
+            char sybmol;
+            sybmol = (char)sr.Read();
+            return sybmol;
         }
+
 
         public void get()
         {
-            if (nch == '@')
+            if (sr.Peek() >= 0)
             {
-                lex = '@';
-                return;
-            }
-            // while (nch != '@')
-            //{
-            while (nch.Equals(' ') || char.IsControl(nch))
-            {
-                if (nch == '\n')
-                    nst++;
-                nch = getc();
+                while (nch.Equals(' ') || char.IsControl(nch))
+                {
+                    if (nch == '\n')
+                    {
+                        nst++;
+                    }
 
-            }
+                    nch = getc();
+                }
 
-            if (char.IsLetter(nch))
-            {
-                word();
-            }
-            else if (char.IsDigit(nch))
-            {
-                number();
-            }
-            else if (nch == '(' || nch == ')' || nch == ',' || nch == ';' || nch == '+' || nch == '-' || nch == '*' || nch == '/' || nch == '%' || nch == '=')
-            {
-                Console.WriteLine("{0} is a special symbol", nch);
-                sw.WriteLine("{0} is a special symbol", nch);
-                lex = nch;
-                nch = getc();
-                
-            }
-            else
-            {
-                nch = '@';
-                lex = '@';
-            }
+                if (char.IsLetter(nch))
+                {
+                    word();
+                }
+                else if (char.IsDigit(nch))
+                {
+                    number();
+                }
+                else if (nch == '(' || nch == ')' || nch == ',' || nch == '=' || nch == ';' || nch == '+' || nch == '-' || nch == '*' || nch == '/' || nch == '%')
+                {
+                    lex = (int)nch;
+                    Console.WriteLine("lexeme={0}", lex);
+                    sw.WriteLine("lexeme={0}", lex);
+                    nch = getc();
 
-            ////nch = getc();
-            //  }
-            return;
+                    return;
+                }
+            }
         }
 
-        int add(string nm)
-        {
+        public int add(string nm)
+        { 
+            for (int i = 0; i < ptn; i++)
+            {
+                if (TNM[i] == nm)
+                {
+                    return i;
+                }
+            }
+           
             try
             {
-                for (int i = 0; i < ptn; i++)
-                {
-                    if (TNM[i].Equals(nm))
-                    {
-                        return i;
-                    }
-                }
                 TNM[ptn] = nm;
+                int nomer = ptn;
                 ptn++;
-
+                return nomer;
             }
+
             catch (IndexOutOfRangeException)
             {
                 Console.WriteLine("Переповнення таблиці TNM");
             }
-            return ptn - 1;
+            return 1;
         }
 
-        void number()
+        void word()
         {
-            lval = 0;
-            while (char.IsDigit(nch))
-            {
-                lval = lval * 10 + nch - '0';
-                //lval =  
-                nch = getc();
-            }
 
-
-            lex = (int)words.NUMB;
-            Console.WriteLine("number lval={0} lex={1}", lval, lex);
-            sw.WriteLine("number lval={0} lex={1}", lval, lex);
-            lval = 0;
-
-        }
-
-        public void word()
-        {
             string tx = " ";
-            string[] serv = { "begin", "end", "if", "do", "while", "return", "const", "int", "then", "read", "print" };
-            int[] cdl = { (int)words.BEGINL, (int)words.ENDL, (int)words.IFL, (int)words.DOL, (int)words.WHILEL, (int)words.RETURNL, (int)words.CONSTL, (int)words.INTL, (int)words.THENL, (int)words.READL, (int)words.PRINTL };
+
+            int[] cdl = { (int)words.BEGINL, (int)words.ENDL, (int)words.READL, (int)words.PRINTL, (int)words.RETRL, (int)words.IFL, (int)words.THENL, (int)words.WHILEL, (int)words.DOL, (int)words.INTL, (int)words.CONSTL };
+
+            string[] serv = new string[] { "begin", "end", "read", "print", "return", "if", "then", "while", "do", "int", "const" };
+
             while (char.IsLetterOrDigit(nch))
             {
                 tx += nch;
                 nch = getc();
             }
-            tx += " ";
-            string txx = tx.Trim();
 
+            sw.WriteLine("tx={0}", tx);
+            tx += " ";
 
             for (int j = 0; j < serv.Length; j++)
             {
+                string txx = tx.Trim();
+
                 if (serv[j] == txx)
                 {
                     lex = cdl[j];
-                    Console.WriteLine("{0} lex={1}", serv[j], lex);
-                    sw.WriteLine("{0} lex={1}", serv[j], lex);
+                    Console.WriteLine("lexeme={0}", lex);
+                    Console.WriteLine("Keyword={0}", lex);
+                    sw.WriteLine("Keyword={0}", lex);
+
                     return;
                 }
             }
+
             lex = (int)words.IDEN;
             lval = add(tx);
-            Console.WriteLine("{0} is an identifier lex={1} lval={2}", tx, lex, lval);
-            sw.WriteLine("{0} is an identifier lex={1} lval={2}", tx, lex, lval);
+            sw.WriteLine(" for ident tx={0} lval={1}", tx, lval);
+            Console.WriteLine("lexeme={0}", lex);
+            sw.WriteLine("lexeme={0}", lex);
+
+            return;
+        }
+
+        void number()
+        {
+            lval = 0;
+
+            while (char.IsDigit(nch))
+            {
+                lval = lval * 10 + nch - '0';
+                nch = getc();
+                Console.WriteLine("nch={0}", nch);
+            }
+
+            lex = (int)words.NUMB;
+            Console.WriteLine("lexeme={0}", lex);
+            sw.WriteLine("lexeme={0}", lex);
+
             return;
         }
 
@@ -194,14 +198,14 @@ namespace Practika2
         {
             if (lex != lx)
             {
-                Console.WriteLine("Не співпадають лексеми lex={0}  та lx={1} в рядку nst={2}", lex, lx, nst);
+                Console.WriteLine("Не співпадають лексеми lex={0}  та lx={1} nst={2}", lex, lx, nst);
             }
             get();
             return;
         }
 
         public void prog()
-        { //check if lex is prog PROG -> (DCONST|DVARB|DFUNK) * eof
+        {
             try
             {
                 while (sr.Peek() >= 0)
@@ -230,28 +234,17 @@ namespace Practika2
             }
         }
 
-        void dconst()
+        public void dfunc()
         {
-            do
-            {
-                get();
-                cons();
-            } while (lex == ',');
-            exam(';');
-            return;
-        }
-
-        void cons() { 
+            int cp, st;
             string nm = TNM[lval];
-            int s;
-        
-            exam((int)words.IDEN);
-            exam('=');
-            s = (lex == '-') ? -1 : 1;
-            if (lex == '+' || lex == '-')
-                get();
-            newob(nm, 1, s * lval);//Занесено об'єкт
-            exam((int)words.NUMB);
+            get();
+            ut = 0;
+            cp = param();
+            st = body();
+            ut = 1;
+            pto = ptol;
+            defin(nm, cp, st);
             return;
         }
 
@@ -267,17 +260,33 @@ namespace Practika2
             return;
         }
 
-        public void dfunc()
-        { //parsing and creating new SLP-funct, check DFUNC -> iden PARAM BODY
-            int cp, st;
+        public void dconst()
+        {
+            do
+            {
+                get();
+                cons();
+            } while (lex == ',');
+            exam(';');
+            return;
+        }
+
+        public void cons()
+        {
             string nm = TNM[lval];
-            get();
-            ut = 0;
-            cp = param();
-            st = body();
-            ut = 1;
-            pto = ptol;
-            defin(nm, cp, st);
+            int s;
+            exam((int)words.IDEN);
+            exam('=');
+            s = (lex == '-') ? -1 : 1;
+
+            if (lex == '+' || lex == '-')
+            {
+                get();
+            }
+
+            newob(nm, 1, s * lval);
+            exam((int)words.NUMB);
+
             return;
         }
 
@@ -285,6 +294,7 @@ namespace Practika2
         {
             int p, cp = 0;
             exam('(');
+
             if (lex != ')')
             {
                 newob(TNM[lval], 3, ++cp);
@@ -297,21 +307,34 @@ namespace Practika2
                     exam((int)words.IDEN);
                 }
             }
+
             exam(')');
+
             for (p = ptol; p < pto; p++)
+            {
                 TOB[p].val -= cp + 3;
+            }
+
             return cp;
         }
 
-        int body()
+        public int body()
         {
             int st;
-            exam((int)words.BEGINL);
-            clv = 0;
+            exam((int)words.BEGINL); clv = 0;
+
             while (lex == (int)words.INTL || lex == (int)words.CONSTL)
-                if (lex == (int)words.INTL) dvarb();
+            {
+                if (lex == (int)words.INTL)
+                {
+                    dvarb();
+                }
                 else
+                {
                     dconst();
+                }
+            }
+
             st = gen((int)commands.INI, clv);
             stml();
             exam((int)words.ENDL);
@@ -319,7 +342,27 @@ namespace Practika2
             return st;
         }
 
-        void stml()
+        public int findob(string nm)
+        {
+            int p;
+            Console.WriteLine("nm={0}", nm);
+
+            for (p = pto - 1; p >= 0; p--)
+            {
+                Console.WriteLine("TOB[{0}].name={1}", p, TOB[p].name);
+
+                if (TOB[p].name == nm)
+                {
+                    return p;
+                }
+            }
+
+            Console.WriteLine("{0} не описана");
+
+            return 0;
+        }
+
+        public void stml()
         {
             stat();
             while (lex == ';')
@@ -353,7 +396,7 @@ namespace Practika2
 
                 case (int)words.PRINTL: get(); expr(); gen((int)commands.OPR, 2); break;
 
-                case (int)words.RETURNL: get(); expr(); gen((int)commands.OPR, 9); break;
+                case (int)words.RETRL: get(); expr(); gen((int)commands.OPR, 9); break;
 
                 case (int)words.IFL:
                     get(); expr(); exam((int)words.THENL);
@@ -472,63 +515,36 @@ namespace Practika2
         {
             int pe, p;
             pe = ut == 1 ? pto : ptol;
+
             for (p = pto - 1; p >= pe; p--)
             {
                 if (nm == TOB[p].name)
+                {
                     Console.WriteLine("{0} описана двічі", nm);
+                }
             }
-            if (pto > 30)
+
+            if (pto > 99)
+            {
                 Console.WriteLine("Переповнення таблиці об'єктів  TOB");
+            }
+
             TOB[pto].name = nm;
             TOB[pto].what = wt;
             TOB[pto].val = vl;
             pto++;
         }
 
-        public int findob(string nm)
+        public int gen(int co, int op)
         {
-            int p;
-            Console.WriteLine("nm={0}", nm);
-            for (p = pto - 1; p >= 0; p--)
-            {
-                Console.WriteLine("TOB[{0}].name={1}", p, TOB[p].name);
-                if (TOB[p].name == nm)
-                    return p;
-            }
-            Console.WriteLine("{0} не описана");
-            return 0;
-        }
+            TCD[tc].cod = co;
+            TCD[tc].opd = op;
 
-        public void defin(string nm, int cp, int ad)
-        { //descr SPL-function
-            int p, c1, c2;
-            p = findfn(nm);
-
-            if (p != 0)
-            {
-                if (TFN[p].isd == 1)
-                {
-                    Console.WriteLine("{0} описана двічі", nm);
-                }
-
-                if (TFN[p].cpt != cp)
-                {
-                    Console.WriteLine("Не сходиться кількість параметрів для {0}", nm);
-                }
-
-                TFN[p].isd = 1;
-                
-                TFN[p].start = ad;
-            }
-            else
-            {
-                newfn(nm, 1, cp, ad);
-            }
-            return;
+            return tc++;
         }
 
         public int newfn(string nm, int df, int cp, int ps)
-        { //add SPL-funct to table
+        { 
             if (ptf > 29)
             {
                 Console.WriteLine(" Переповнення таблиці функцій TFN");
@@ -543,7 +559,7 @@ namespace Practika2
         }
 
         public int findfn(string nm)
-        { //search SPL-funct in the table
+        {
             for (int p = ptf - 1; p >= 0; p--)
             {
                 if (TFN[p].name == nm)
@@ -571,16 +587,42 @@ namespace Practika2
             return 0;
         }
 
-        public int gen(int co, int op)
-        { //add comnd to table
-            TCD[tc].cod = co;
-            TCD[tc].opd = op;
+        public void defin(string nm, int cp, int ad)
+        {
+            int p, c1, c2;
+            p = findfn(nm);
 
-            return tc++;
+            if (p != 0)
+            {
+                if (TFN[p].isd == 1)
+                {
+                    Console.WriteLine("{0} описана двічі", nm);
+                }
+
+                if (TFN[p].cpt != cp)
+                {
+                    Console.WriteLine("Не сходиться кількість параметрів для {0}", nm);
+                }
+
+                TFN[p].isd = 1;
+
+                for (c1 = TFN[p].start; c1 != -1; c1 = c2)
+                {
+                    c2 = TCD[c1].opd;
+                    TCD[c1].opd = ad;
+                }
+
+                TFN[p].start = ad;
+            }
+            else
+            {
+                newfn(nm, 1, cp, ad);
+            }
+            return;
         }
 
         public int fmain()
-        { //find main() and not described funct
+        {
             string nm = " main ";
             int pm = -1;
 
@@ -610,7 +652,7 @@ namespace Practika2
         }
 
         public void push(int a)
-        { //integer to stack
+        {
             if (t > 499)
                 Console.WriteLine(" Переповнення стека st ");
             st[++t] = a;
@@ -618,7 +660,7 @@ namespace Practika2
         }
 
         public int read()
-        { //integer from keyboard
+        {
             int v;
             string s;
             Console.WriteLine("Enter a number");
@@ -628,39 +670,138 @@ namespace Practika2
             return v;
         }
 
-        public void printObjInFile()
+        public void interp()
         {
+            t = -1;
+
+            Console.WriteLine("SPL interpretation");
+
+            for (int i = 0; i < cgv; i++)
+            {
+                push(0);
+            }
+
+            if (cpnm != 0)
+            {
+                Console.WriteLine("Введіть {0} фактичних параметрів для main ", cpnm);
+                for (int i = 0; i < cpnm; i++)
+                    push(read());
+            }
+
+            push(cpnm);
+            push(-2);
+            push(-1);
+            sp = t;
+            p = adrnm;
+            
+            do
+            {
+                comman();
+                p++;
+            } while (p >= 0);
+
+            if (p == -1)
+            {
+                Console.WriteLine("st[{0}]={1}", t, st[t]);
+            }
+        }
+
+        public void comman()
+        {
+            int a = TCD[p].opd;
+
+            switch (TCD[p].cod)
+            {
+                case (int)commands.OPR: operat(a); break;
+                case (int)commands.LIT: push(a); break;
+                case (int)commands.LDE: push(st[a]); break;
+                case (int)commands.LDI: push(st[sp + a]); break;
+                case (int)commands.STE: st[a] = st[t--]; break;
+                case (int)commands.STI: st[sp + a] = st[t--]; break;
+                case (int)commands.CAL: push(p); push(sp); sp = t; p = a - 1; break;
+                case (int)commands.INI:
+                    int i;
+
+                    for (i = 0; i < a; i++)
+                    {
+                        push(0);
+                    }
+
+                    break;
+                case (int)commands.JMP: p = a - 1; break;
+                case (int)commands.JMC: if (st[t--] <= 0) p = a - 1; break;
+                default: Console.WriteLine("TCD[].cod", p, TCD[p].cod); break;
+            }
+        }
+
+        public void operat(int a)
+        {
+            int j = t - 1;
+
+            switch (a)
+            {
+                case 1:
+                    Console.WriteLine("1>");
+                    push(read());
+                    break;
+                case 2: Console.WriteLine("{0}", st[t--]); break;
+                case 3: st[j] += st[t--]; break;
+                case 4: st[j] -= st[t--]; break;
+                case 5: st[j] *= st[t--]; break;
+                case 6:
+                    if (st[t] <= 0)
+                    {
+                        Console.WriteLine("Ділення на ноль");
+                    }
+
+                    st[j] /= st[t--]; break;
+                case 7:
+                    if (st[t] <= 0)
+                    {
+                        Console.WriteLine("Ділення на ноль");
+                    }
+
+                    st[j] %= st[t--]; break;
+                case 8: st[t] = -st[t]; break;
+                case 9:
+                    j = st[sp - 2]; st[sp - j - 2] = st[t]; t = sp - j - 2;
+                    p = st[sp - 1]; sp = st[sp]; break;
+                case 10: p = -3; break;
+            }
+            return;
+        }
+
+        public void tables_to_file()
+        {
+            for (int j = 0; j < tc; j++)
+            {
+                sw.WriteLine("TCD[{0}].cod {1} opd={2}", j, TCD[j].cod, TCD[j].opd);
+                Console.WriteLine("TCD[{0}].cod {1} opd={2}", j, TCD[j].cod, TCD[j].opd);
+            }
 
             for (int j = 0; j < pto; j++)
             {
-                sw.WriteLine("TOB[{0}] name ={1} what={2} val={3}", j, TOB[j].name, TOB[j].what, TOB[j].val);
-                Console.WriteLine("TOB[{0}] name ={1} what={2} val={3}", j, TOB[j].name, TOB[j].what, TOB[j].val);
-            }
-            for (int j = 0; j < ptf; j++)
-            {
-                sw.WriteLine("TFN[j].name={0}, TFN[j].isd={1}, TFN[j].cpt={2}, TFN[j].start={3}", TFN[j].name, TFN[j].isd, TFN[j].cpt, TFN[j].start);
-                Console.WriteLine("TFN[j].name={0}, TFN[j].isd={1}, TFN[j].cpt={2}, TFN[j].start={3}", TFN[j].name, TFN[j].isd, TFN[j].cpt, TFN[j].start);
+                sw.WriteLine("TOB[{0}].name {1} what={2} val={3}", j, TOB[j].name, TOB[j].what, TOB[j].val);
+                Console.WriteLine("TOB[{0}].name {1} what={2} val={3}", j, TOB[j].name, TOB[j].what, TOB[j].val);
             }
 
-            for (int j = 0; j < tc; j++)
+            for (int j = 0; j < ptn; j++)
             {
-                sw.WriteLine("TCD[j].cod={0}, TCD[j].opd={1}", TCD[j].cod, TCD[j].opd);
-                Console.WriteLine("TCD[j].cod={0}, TCD[j].opd={1}", TCD[j].cod, TCD[j].opd);
+                sw.WriteLine("TFN[{0}].name {1} isd={2} cpt={3} start={4}", j, TFN[j].name, TFN[j].isd, TFN[j].cpt, TFN[j].start);
+                Console.WriteLine("TFN[{0}].name {1} isd={2} cpt={3} start={4}", j, TFN[j].name, TFN[j].isd, TFN[j].cpt, TFN[j].start);
             }
-
         }
-
 
         static void Main(string[] args)
         {
-            string name1 = "C:\\Users\\Andrey\\Documents\\sp\\f1.txt";
-            string name2 = "C:\\Users\\Andrey\\Documents\\sp\\f2.txt";
+            string nameIn = "C:\\Users\\Andrey\\Documents\\sp\\f1.txt";
+            string nameOut = "C:\\Users\\Andrey\\Documents\\sp\\f2.txt";
 
-            Program ob = new Program(name1, name2);
+            Program ob = new Program(nameIn, nameOut);
             ob.get();
-            ob.prog();
-            ob.printObjInFile();
-
+            ob.prog(); 
+            ob.tables_to_file();
+            ob.interp();
             ob.sw.Close();
         }
     }
